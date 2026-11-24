@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#15803d">
+  <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="PJ fitnes">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>PJ fitnes — Treinos Personalizados</title>
 
   <!-- Fonte Inter -->
@@ -19,6 +17,9 @@
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -484,13 +485,13 @@
           <!-- Esqueci a senha -->
           <div id="forgotPasswordBox" class="hidden space-y-2 bg-brand-50/70 border border-brand-100 rounded-2xl p-3">
             <p class="text-xs font-bold text-brand-900">Redefinir senha</p>
-            <p class="text-[11px] text-slate-600">Informe o e-mail no campo acima e escolha uma nova senha.</p>
-            <div class="relative">
+            <p class="text-[11px] text-slate-600">Informe o e-mail no campo acima e enviaremos um link para você criar uma nova senha.</p>
+            <div class="relative hidden">
               <input id="forgotNewPassword" type="password" autocomplete="new-password" placeholder="Nova senha (mínimo 6 caracteres)" class="form-input !mt-0 !py-2 !text-xs !pr-12">
               <button type="button" id="forgotNewPasswordToggle" onclick="togglePasswordVisibility('forgotNewPassword','forgotNewPasswordToggle')" aria-label="Mostrar senha" class="absolute inset-y-0 right-0 px-3.5 text-base text-brand-800 hover:text-brand-600 transition">👁️</button>
             </div>
             <div class="flex gap-2 pt-1">
-              <button type="button" onclick="resetPassword()" class="btn !py-2 !px-3 !text-xs flex-1">Salvar nova senha</button>
+              <button type="button" onclick="resetPassword()" class="btn !py-2 !px-3 !text-xs flex-1">Enviar link por e-mail</button>
               <button type="button" onclick="toggleForgotPasswordBox()" class="btn secondary !py-2 !px-3 !text-xs">Cancelar</button>
             </div>
           </div>
@@ -501,7 +502,7 @@
         </form>
 
         <!-- Configuração opcional de nuvem Firebase (sem campo de e-mail de treinador) -->
-        <div class="mt-5 pt-4 border-t border-brand-100 text-xs text-slate-600">
+        <div class="hidden mt-5 pt-4 border-t border-brand-100 text-xs text-slate-600">
           <button type="button" onclick="toggleFirebaseConfigBox()" class="w-full flex items-center justify-between font-bold text-brand-800 py-1">
             <span>☁️ Nuvem Firebase (opcional)</span>
             <span id="firebaseToggleIcon">＋</span>
@@ -521,6 +522,8 @@
       </div>
     </div>
   </div>
+
+  <div id="bootLoading" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-brand-50 text-brand-800 font-bold">Carregando…</div>
 
   <!-- APLICAÇÃO PRINCIPAL (APÓS LOGIN) -->
   <div id="appScreen" class="hidden">
@@ -1007,6 +1010,277 @@
     }
 
     // =========================================================================
+    // NUVEM: FIREBASE AUTH + FIRESTORE (fichas sincronizadas entre aparelhos)
+    // =========================================================================
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDsq5Ibvgae7rlRBM_T_-3Hn4goBjNLWB0",
+      authDomain: "pj-fitnes.firebaseapp.com",
+      projectId: "pj-fitnes",
+      storageBucket: "pj-fitnes.firebasestorage.app",
+      messagingSenderId: "338434895498",
+      appId: "1:338434895498:web:dce12406594fa3c0f7c773"
+    };
+    const REGISTRY_KEY = "pj_fitnes_students_v1";
+    let CLOUD_ON = false, fbAuth = null, fbDb = null;
+    let coachExists = false, pendingReg = null, manualAuth = false;
+    let cloudSynced = {}, cloudUnsub = null, pushTimer = null, pendingRegistry = null;
+
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      fbAuth = firebase.auth();
+      fbDb = firebase.firestore();
+      fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+      CLOUD_ON = true;
+    } catch (err) {
+      console.error("Firebase indisponível:", err);
+    }
+
+    // Planos, rascunhos e histórico têm arrays aninhados (o Firestore não aceita),
+    // então cada aluno é salvo como um documento com esses blocos em texto JSON.
+    function studentToDoc(s) {
+      return {
+        name: s.name || "",
+        email: normEmail(s.email),
+        plans: JSON.stringify(s.plans || DEFAULT_PLANS),
+        drafts: JSON.stringify(s.drafts || {}),
+        history: JSON.stringify(s.history || [])
+      };
+    }
+
+    function docToStudent(d) {
+      const parse = (v, fb) => { try { return v ? JSON.parse(v) : fb; } catch (e) { return fb; } };
+      return {
+        name: d.name || "",
+        email: d.email,
+        plans: parse(d.plans, JSON.parse(JSON.stringify(DEFAULT_PLANS))),
+        drafts: parse(d.drafts, {}),
+        history: parse(d.history, [])
+      };
+    }
+
+    const docSig = d => JSON.stringify([d.name, d.email, d.plans, d.drafts, d.history]);
+    const studentDoc = email => fbDb.collection("students").doc(email);
+
+    function cloudPush(registry) {
+      if (!CLOUD_ON || !currentUser) return;
+      pendingRegistry = registry;
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(flushPush, 700);
+    }
+
+    function flushPush() {
+      clearTimeout(pushTimer);
+      const reg = pendingRegistry;
+      pendingRegistry = null;
+      if (!CLOUD_ON || !reg || !currentUser) return Promise.resolve();
+
+      const isCoach = currentUser.role === "coach";
+      const me = normEmail(currentUser.email);
+      const batch = fbDb.batch();
+      let changes = 0;
+
+      Object.keys(reg).forEach(email => {
+        if (!isCoach && email !== me) return;
+        const doc = studentToDoc(reg[email]);
+        const sig = docSig(doc);
+        if (cloudSynced[email] === sig) return;
+        batch.set(studentDoc(email), doc);
+        cloudSynced[email] = sig;
+        changes++;
+      });
+
+      if (isCoach) {
+        Object.keys(cloudSynced).forEach(email => {
+          if (!reg[email]) {
+            batch.delete(studentDoc(email));
+            delete cloudSynced[email];
+            changes++;
+          }
+        });
+      }
+
+      if (!changes) return Promise.resolve();
+      return batch.commit().catch(err => {
+        console.error("Erro ao sincronizar:", err);
+        showToast("Não foi possível salvar na nuvem. Verifique a conexão.", "error");
+      });
+    }
+
+    function startCloudSync(user, role) {
+      const email = normEmail(user.email);
+      if (cloudUnsub) { cloudUnsub(); cloudUnsub = null; }
+      cloudSynced = {};
+
+      // Guarda uma cópia dos dados antigos (só deste aparelho) antes de trocar pelos da nuvem
+      const legacy = readJson(REGISTRY_KEY, {});
+      if (Object.keys(legacy).length && !localStorage.getItem("pj_fitnes_students_legacy_backup")) {
+        try { localStorage.setItem("pj_fitnes_students_legacy_backup", JSON.stringify(legacy)); } catch (e) {}
+      }
+
+      return new Promise((resolve, reject) => {
+        let first = true;
+        const fail = err => {
+          console.error(err);
+          if (first) { first = false; reject(err); }
+          else showToast("Conexão com a nuvem interrompida.", "error");
+        };
+
+        if (role === "coach") {
+          cloudUnsub = fbDb.collection("students").onSnapshot(snap => {
+            if (first) {
+              first = false;
+              if (snap.empty && Object.keys(legacy).length) {
+                // Primeiro acesso na nuvem: sobe as fichas que já existiam neste aparelho
+                writeJson(REGISTRY_KEY, legacy);
+                saveStudentsRegistry(legacy);
+              } else {
+                const fresh = {};
+                snap.forEach(doc => {
+                  const s = docToStudent({ ...doc.data(), email: doc.data().email || doc.id });
+                  fresh[doc.id] = s;
+                  cloudSynced[doc.id] = docSig(studentToDoc(s));
+                });
+                writeJson(REGISTRY_KEY, fresh);
+              }
+              resolve();
+              return;
+            }
+
+            const reg = readJson(REGISTRY_KEY, {});
+            let listChange = false, histChange = false;
+            snap.docChanges().forEach(ch => {
+              if (ch.doc.metadata.hasPendingWrites) return;
+              const id = ch.doc.id;
+              if (ch.type === "removed") {
+                if (reg[id]) { delete reg[id]; delete cloudSynced[id]; listChange = true; }
+                return;
+              }
+              const s = docToStudent({ ...ch.doc.data(), email: ch.doc.data().email || id });
+              const before = reg[id];
+              reg[id] = s;
+              cloudSynced[id] = docSig(studentToDoc(s));
+              const planChanged = !before || JSON.stringify(before.plans) !== JSON.stringify(s.plans);
+              const histChanged = !before || JSON.stringify(before.history) !== JSON.stringify(s.history);
+              if (planChanged) listChange = true;
+              else if (histChanged && id === trainerSelectedEmail) histChange = true;
+            });
+            writeJson(REGISTRY_KEY, reg);
+            if (!currentUser) return;
+
+            const typing = document.activeElement && document.getElementById("trainer")?.contains(document.activeElement);
+            if (listChange && !typing) {
+              if (trainerSelectedEmail && !reg[trainerSelectedEmail]) trainerSelectedEmail = Object.keys(reg)[0] || "";
+              renderTrainerStudentsList();
+              refreshSecondaryViews();
+            } else if (histChange && reg[trainerSelectedEmail]) {
+              renderTrainerStudentHistory(reg[trainerSelectedEmail]);
+              refreshSecondaryViews();
+            }
+          }, fail);
+        } else {
+          cloudUnsub = studentDoc(email).onSnapshot(snap => {
+            if (first) {
+              first = false;
+              const fresh = {};
+              if (snap.exists) {
+                const s = docToStudent({ ...snap.data(), email });
+                fresh[email] = s;
+                cloudSynced[email] = docSig(studentToDoc(s));
+                writeJson(REGISTRY_KEY, fresh);
+              } else if (legacy[email]) {
+                fresh[email] = legacy[email];
+                writeJson(REGISTRY_KEY, fresh);
+                saveStudentsRegistry(fresh);
+              } else {
+                writeJson(REGISTRY_KEY, fresh);
+              }
+              resolve();
+              return;
+            }
+
+            if (snap.metadata.hasPendingWrites || !snap.exists) return;
+            const s = docToStudent({ ...snap.data(), email });
+            const reg = readJson(REGISTRY_KEY, {});
+            const before = reg[email];
+            reg[email] = s;
+            cloudSynced[email] = docSig(studentToDoc(s));
+            writeJson(REGISTRY_KEY, reg);
+            if (!currentUser) return;
+
+            const planChanged = !before || JSON.stringify(before.plans) !== JSON.stringify(s.plans);
+            const histChanged = !before || JSON.stringify(before.history) !== JSON.stringify(s.history);
+            if (planChanged || histChanged) {
+              renderStudentWorkout();
+              refreshSecondaryViews();
+              if (planChanged) showToast("Sua ficha foi atualizada pelo treinador.");
+            }
+          }, fail);
+        }
+      });
+    }
+
+    function authErrorMessage(err) {
+      const map = {
+        "auth/email-already-in-use": "Este e-mail já está cadastrado. Faça login.",
+        "auth/invalid-email": "E-mail inválido.",
+        "auth/weak-password": "A senha deve ter pelo menos 6 caracteres.",
+        "auth/invalid-credential": "E-mail ou senha incorretos.",
+        "auth/wrong-password": "Senha incorreta. Tente novamente.",
+        "auth/user-not-found": "E-mail não encontrado. Crie uma conta primeiro.",
+        "auth/too-many-requests": "Muitas tentativas. Aguarde um pouco e tente de novo.",
+        "auth/network-request-failed": "Sem conexão com a internet.",
+        "auth/unauthorized-domain": "Este site ainda não foi autorizado no Firebase (Authentication > Configurações > Domínios autorizados)."
+      };
+      return map[err && err.code] || "Não foi possível concluir. Tente novamente.";
+    }
+
+    async function bootUser(user) {
+      const email = normEmail(user.email);
+      const reg = pendingReg;
+      pendingReg = null;
+
+      let isCoach = false;
+      try {
+        const coachRef = fbDb.collection("config").doc("coach");
+        let snap = await coachRef.get();
+        if (!snap.exists && reg && reg.coach) {
+          try {
+            await coachRef.set({ uid: user.uid });
+            snap = await coachRef.get();
+          } catch (e) {
+            showToast("Não foi possível criar a conta de treinador. Sua conta foi criada como aluno.", "error");
+          }
+        }
+        coachExists = snap.exists;
+        isCoach = snap.exists && snap.data().uid === user.uid;
+      } catch (err) {
+        const cached = readJson("pj_fitnes_session_v1", null);
+        isCoach = Boolean(cached && cached.uid === user.uid && cached.role === "coach");
+      }
+
+      const name = (reg && reg.name) || user.displayName || email.split("@")[0];
+      currentUser = { uid: user.uid, name, email, role: isCoach ? "coach" : "student" };
+
+      try {
+        await startCloudSync(user, currentUser.role);
+      } catch (err) {
+        showToast("Não foi possível carregar os dados da nuvem. Verifique as regras do Firestore e a conexão.", "error");
+        currentUser = null;
+        fbAuth.signOut();
+        return;
+      }
+
+      enterApp(currentUser);
+      syncCoachRegistrationAvailability();
+      if (manualAuth) {
+        manualAuth = false;
+        showToast(isCoach ? `Bem-vindo, ${name}! Conta de treinador.` : `Bem-vindo ao PJ fitnes, ${name}!`);
+      }
+    }
+
+    window.addEventListener("pagehide", () => { flushPush(); });
+
+    // =========================================================================
     // BANCO DE CONTAS, ALUNOS E FICHAS PERSONALIZADAS
     // =========================================================================
     function getAccounts() {
@@ -1024,14 +1298,12 @@
     }
 
     function hasExistingCoach(accountsObj = null) {
-      return Boolean(getCoachAccount(accountsObj));
+      return coachExists;
     }
 
-    function isAuthorizedCoach(email, accountsObj = null) {
+    function isAuthorizedCoach(email) {
       const cleanEmail = normEmail(email);
-      if (!cleanEmail) return false;
-      const coach = getCoachAccount(accountsObj);
-      return Boolean(coach && coach.email === cleanEmail && coach.role === "coach");
+      return Boolean(cleanEmail && currentUser && currentUser.role === "coach" && normEmail(currentUser.email) === cleanEmail);
     }
 
     function syncCoachRegistrationAvailability() {
@@ -1057,7 +1329,7 @@
     function getStudentsRegistry() {
       const registry = readJson("pj_fitnes_students_v1", {});
       // Garante um aluno exemplo inicial caso ainda não exista nenhum
-      if (Object.keys(registry).length === 0) {
+      if (!CLOUD_ON && Object.keys(registry).length === 0) {
         const demoEmail = "aluno@pjfitnes.com";
         registry[demoEmail] = {
           name: "Aluno Exemplo",
@@ -1073,6 +1345,7 @@
 
     function saveStudentsRegistry(registry) {
       writeJson("pj_fitnes_students_v1", registry);
+      cloudPush(registry);
     }
 
     function ensureStudentRecord(email, nameFallback = "") {
@@ -1145,26 +1418,20 @@
 
     function resetPassword() {
       const email = normEmail(document.getElementById("authEmail").value);
-      const newPassword = document.getElementById("forgotNewPassword").value;
       if (!email) {
         showToast("Digite seu e-mail no campo acima.", "error");
         return;
       }
-      if (newPassword.length < 6) {
-        showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
+      if (!CLOUD_ON) {
+        showToast("Sem conexão com o Firebase. Recarregue a página.", "error");
         return;
       }
-      const accounts = getAccounts();
-      if (!accounts[email]) {
-        showToast("E-mail não encontrado neste aparelho.", "error");
-        return;
-      }
-      accounts[email].passwordHash = btoa(newPassword);
-      saveAccounts(accounts);
-      document.getElementById("forgotNewPassword").value = "";
-      document.getElementById("authPassword").value = "";
-      document.getElementById("forgotPasswordBox").classList.add("hidden");
-      showToast("Senha redefinida! Entre com a nova senha.");
+      fbAuth.sendPasswordResetEmail(email)
+        .then(() => {
+          document.getElementById("forgotPasswordBox").classList.add("hidden");
+          showToast("Enviamos um link para redefinir a senha. Confira seu e-mail (e o spam).");
+        })
+        .catch(err => showToast(authErrorMessage(err), "error"));
     }
 
     function setAuthMode(mode) {
@@ -1203,112 +1470,57 @@
       const nameInput = document.getElementById("authName").value.trim();
       const isCoachSelected = Boolean(document.getElementById("authIsCoach")?.checked);
 
+      if (!CLOUD_ON) {
+        showToast("Sem conexão com o Firebase. Recarregue a página.", "error");
+        return;
+      }
       if (!email || !password) {
         showToast("Preencha o e-mail e a senha.", "error");
         return;
       }
-
       if (password.length < 6) {
         showToast("A senha deve ter pelo menos 6 caracteres.", "error");
         return;
       }
 
-      const accounts = getAccounts();
+      const submitBtn = document.getElementById("authSubmitBtn");
+      const done = () => { submitBtn.disabled = false; };
+      submitBtn.disabled = true;
+      manualAuth = true;
 
       if (authMode === "register") {
-        if (accounts[email]) {
-          showToast("Este e-mail já está cadastrado. Faça login.", "error");
-          return;
-        }
-
-        if (isCoachSelected && hasExistingCoach(accounts)) {
+        if (isCoachSelected && hasExistingCoach()) {
           syncCoachRegistrationAvailability();
           showToast("Já existe uma conta de treinador cadastrada. Apenas uma conta de treinador é permitida.", "error");
+          manualAuth = false;
+          done();
           return;
         }
-
         const displayName = nameInput || email.split("@")[0];
-        const role = (isCoachSelected && !hasExistingCoach(accounts)) ? "coach" : "student";
-
-        accounts[email] = {
-          name: displayName,
-          email,
-          passwordHash: btoa(password),
-          role
-        };
-        saveAccounts(accounts);
-
-        if (role === "student") {
-          ensureStudentRecord(email, displayName);
-        }
-
-        syncCoachRegistrationAvailability();
-
-        enterApp({
-          name: displayName,
-          email,
-          role
-        });
-        showToast(
-          role === "coach"
-            ? `Conta única de treinador criada! Bem-vindo, ${displayName}.`
-            : `Conta criada! Bem-vindo ao PJ fitnes, ${displayName}.`
-        );
+        pendingReg = { name: displayName, coach: isCoachSelected };
+        fbAuth.createUserWithEmailAndPassword(email, password)
+          .then(cred => cred.user.updateProfile({ displayName }).catch(() => {}))
+          .catch(err => {
+            pendingReg = null;
+            manualAuth = false;
+            showToast(authErrorMessage(err), "error");
+          })
+          .finally(done);
       } else {
-        const existing = accounts[email];
-        if (!existing) {
-          // Permite primeiro acesso direto apenas se o e-mail já foi cadastrado pelo treinador como aluno
-          const registry = getStudentsRegistry();
-          const preRegisteredStudent = registry[email];
-          if (preRegisteredStudent) {
-            const displayName = preRegisteredStudent.name || email.split("@")[0];
-            accounts[email] = {
-              name: displayName,
-              email,
-              passwordHash: btoa(password),
-              role: "student"
-            };
-            writeJson("pj_fitnes_accounts_v1", accounts);
-            ensureStudentRecord(email, displayName);
-
-            enterApp({
-              name: displayName,
-              email,
-              role: "student"
-            });
-            showToast(`Bem-vindo ao PJ fitnes, ${displayName}!`);
-            return;
-          }
-
-          showToast("E-mail não encontrado. Crie uma conta ou peça para o treinador cadastrar seu e-mail.", "error");
-          return;
-        }
-
-        if (existing.passwordHash !== btoa(password)) {
-          showToast("Senha incorreta. Tente novamente.", "error");
-          return;
-        }
-
-        const role = existing.role === "coach" ? "coach" : "student";
-        if (role === "student") {
-          ensureStudentRecord(existing.email, existing.name);
-        }
-
-        enterApp({
-          name: existing.name || existing.email.split("@")[0],
-          email: existing.email,
-          role
-        });
-        showToast(`Olá, ${existing.name || existing.email}!`);
+        fbAuth.signInWithEmailAndPassword(email, password)
+          .catch(err => {
+            manualAuth = false;
+            showToast(authErrorMessage(err), "error");
+          })
+          .finally(done);
       }
     }
 
     function enterApp(user) {
-      const accounts = getAccounts();
       const cleanEmail = normEmail(user.email);
-      const verifiedRole = isAuthorizedCoach(cleanEmail, accounts) ? "coach" : "student";
+      const verifiedRole = user.role === "coach" ? "coach" : "student";
       currentUser = { ...user, email: cleanEmail, role: verifiedRole };
-      writeJson("pj_fitnes_session_v1", currentUser);
+      writeJson("pj_fitnes_session_v1", { uid: user.uid, role: verifiedRole, name: user.name });
 
       document.getElementById("authScreen").classList.add("hidden");
       document.getElementById("appScreen").classList.remove("hidden");
@@ -1350,8 +1562,14 @@
 
     function logoutUser() {
       stopRest();
-      currentUser = null;
-      localStorage.removeItem("pj_fitnes_session_v1");
+      const finish = () => {
+        if (cloudUnsub) { cloudUnsub(); cloudUnsub = null; }
+        currentUser = null;
+        cloudSynced = {};
+        localStorage.removeItem("pj_fitnes_session_v1");
+        if (fbAuth) fbAuth.signOut();
+      };
+      Promise.resolve(flushPush()).then(finish, finish);
       document.getElementById("appScreen").classList.add("hidden");
       document.getElementById("authScreen").classList.remove("hidden");
       document.getElementById("authPassword").value = "";
@@ -2355,21 +2573,32 @@
 
     (function initApp() {
       getAccounts();
-      getStudentsRegistry();
       loadFirebaseConfigInputs();
       syncCoachRegistrationAvailability();
 
-      const savedSession = readJson("pj_fitnes_session_v1", null);
-      if (savedSession && savedSession.email) {
-        enterApp(savedSession);
+      const hideBoot = () => document.getElementById("bootLoading")?.classList.add("hidden");
+      if (!CLOUD_ON) { hideBoot(); return; }
+
+      if (readJson("pj_fitnes_session_v1", null)) {
+        document.getElementById("bootLoading")?.classList.remove("hidden");
       }
-    })();
-  </script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function () {
-        navigator.serviceWorker.register("sw.js").catch(function (e) { console.error("SW:", e); });
+
+      fbDb.collection("config").doc("coach").get()
+        .then(snap => { coachExists = snap.exists; syncCoachRegistrationAvailability(); })
+        .catch(() => {});
+
+      fbAuth.onAuthStateChanged(async user => {
+        try {
+          if (user && (!currentUser || currentUser.uid !== user.uid)) {
+            await bootUser(user);
+          }
+        } finally {
+          hideBoot();
+        }
       });
+    })();
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
     }
   </script>
 </body>
