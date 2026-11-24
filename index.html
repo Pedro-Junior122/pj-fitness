@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#15803d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PJ fitnes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <title>PJ fitnes — Treinos Personalizados</title>
+
+  <!-- Fonte Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Estilos complementares para animações, barras de descanso e responsividade */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f4fbf6;
+      color: #0f291a;
+      margin: 0;
+      padding-bottom: 100px;
+      overflow-x: hidden;
+    }
+
+    .nav-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .nav-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-btn {
+      white-space: nowrap;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: #ffffff;
+      color: #166534;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: #f0fdf4;
+    }
+
+    .nav-btn.active {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #dcfce7;
+      border-radius: 18px;
+      padding: 16px;
+      margin: 12px 0;
+      box-shadow: 0 4px 18px rgba(20, 83, 45, 0.05);
+    }
+
+    .exercise {
+      border: 1px solid #e2f3e8;
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+      background: #ffffff;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .exercise.done {
+      background: #f0fdf4;
+      border-color: #4ade80;
+    }
+
+    .exercise-title {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #0f291a;
+    }
+
+    .exercise-title input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #16a34a;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .exercise-meta {
+      margin: 6px 0 10px 30px;
+      font-size: 13px;
+      color: #4b6b58;
+      font-weight: 500;
+    }
+
+    .coach-tip {
+      margin: 0 0 10px 30px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #f0fdf4;
+      border-left: 3px solid #16a34a;
+      font-size: 13px;
+      color: #166534;
+    }
+
+    .sets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 12px 30px;
+    }
+
+    .setbtn {
+      border: 2px solid #bbf7d0;
+      background: #ffffff;
+      color: #166534;
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .setbtn.on {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 520px) {
+      .fields {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-input,
+    .notes-area,
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cce7d6;
+      border-radius: 10px;
+      margin-top: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #ffffff;
+      color: #0f291a;
+    }
+
+    .field-input:focus,
+    .notes-area:focus,
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #16a34a;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    }
+
+    .notes-area {
+      min-height: 46px;
+      margin-top: 10px;
+      resize: vertical;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 11px;
+      padding: 11px 15px;
+      background: #16a34a;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: #15803d;
+    }
+
+    .btn.secondary {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .btn.secondary:hover {
+      background: #bbf7d0;
+    }
+
+    .btn.danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn.danger:hover {
+      background: #fecaca;
+    }
+
+    .progress-track {
+      height: 9px;
+      background: #dcfce7;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .stat-card strong {
+      font-size: 24px;
+      display: block;
+      color: #15803d;
+      margin-top: 4px;
+    }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .cal-day {
+      padding: 9px 2px;
+      border-radius: 9px;
+      background: #f8fcf9;
+      border: 1px solid #e6f4ea;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e3a29;
+    }
+
+    .cal-day.trained {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+    }
+
+    .cal-day.today {
+      outline: 2px solid #15803d;
+      outline-offset: 1px;
+    }
+
+    .weekdays {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4b6b58;
+      padding: 6px 0;
+      text-transform: uppercase;
+    }
+
+    .editor-row {
+      display: grid;
+      grid-template-columns: 1.6fr 74px 96px 84px;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .editor-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .editor-row input:first-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .editor-row input {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid #cce7d6;
+      border-radius: 9px;
+      font-size: 13px;
+      background: #ffffff;
+    }
+
+    .restbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #14532d;
+      color: #ffffff;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 40;
+      box-shadow: 0 -6px 22px rgba(20, 83, 45, 0.28);
+      border-top: 2px solid #22c55e;
+    }
+
+    .restinfo {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .restinfo span {
+      display: block;
+      font-size: 12px;
+      color: #dcfce7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .restinfo strong {
+      font-size: 26px;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .rprogress {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .rprogress div {
+      height: 100%;
+      background: #4ade80;
+      width: 0%;
+      transition: width 0.25s linear;
+    }
+
+    .restctl {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .restctl .btn {
+      padding: 9px 11px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Toast / Mensagem de feedback sem usar alert() -->
+  <div id="toastBanner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl border transition-all"></div>
+
+  <!-- TELA DE AUTENTICAÇÃO (LOGIN / CADASTRO) -->
+  <div id="authScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-brand-700 via-brand-600 to-brand-50">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-brand-100 overflow-hidden">
+      <!-- Cabeçalho Verde com Halter Branco -->
+      <div class="bg-brand-700 text-white px-6 py-7 text-center">
+        <div class="mx-auto w-20 h-20 rounded-2xl bg-brand-600 border-2 border-brand-300 flex items-center justify-center shadow-lg mb-3">
+          <!-- Logotipo SVG: fundo verde, peso de academia (halter) branco -->
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Logo PJ fitnes">
+            <rect x="6" y="20" width="8" height="24" rx="3" fill="#FFFFFF"/>
+            <rect x="16" y="15" width="8" height="34" rx="3" fill="#FFFFFF"/>
+            <rect x="24" y="28" width="16" height="8" rx="2" fill="#FFFFFF"/>
+            <rect x="40" y="15" width="8" height="34" rx="3" fill="#FFFFFF"/>
+            <rect x="50" y="20" width="8" height="24" rx="3" fill="#FFFFFF"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight">PJ fitnes</h1>
+        <p class="text-brand-100 text-sm mt-1">Treinos personalizados • Acompanhamento completo</p>
+      </div>
+
+      <!-- Alternância Login / Cadastro -->
+      <div class="p-6">
+        <div class="grid grid-cols-2 gap-2 bg-brand-50 p-1 rounded-xl border border-brand-100 mb-5">
+          <button type="button" id="authModeLogin" onclick="setAuthMode('login')" class="py-2.5 rounded-lg text-sm font-bold bg-brand-600 text-white shadow-sm transition">
+            Entrar
+          </button>
+          <button type="button" id="authModeRegister" onclick="setAuthMode('register')" class="py-2.5 rounded-lg text-sm font-bold text-brand-800 hover:bg-brand-100 transition">
+            Criar conta
+          </button>
+        </div>
+
+        <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+          <div id="registerNameBox" class="hidden">
+            <label class="block text-xs font-bold uppercase tracking-wide text-brand-800 mb-1">Seu nome</label>
+            <input id="authName" type="text" placeholder="Ex.: Lucas Almeida" class="form-input">
+          </div>
+
+          <div id="registerCoachBox" class="hidden">
+            <label id="coachOptionLabel" class="flex items-center gap-2.5 p-3 rounded-xl bg-brand-50 border border-brand-200 cursor-pointer select-none transition">
+              <input id="authIsCoach" type="checkbox" class="w-4 h-4 accent-brand-600 rounded cursor-pointer">
+              <span class="text-xs font-bold text-brand-900">Sou o treinador</span>
+            </label>
+            <p id="coachTakenNotice" class="hidden mt-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-900">
+              Já existe uma conta de treinador cadastrada. Novos cadastros são criados como conta de aluno.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wide text-brand-800 mb-1">E-mail</label>
+            <input id="authEmail" type="email" required autocomplete="email" placeholder="seuemail@exemplo.com" class="form-input">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wide text-brand-800 mb-1">Senha</label>
+            <div class="relative">
+              <input id="authPassword" type="password" required autocomplete="current-password" placeholder="Mínimo 6 caracteres" class="form-input !pr-12">
+              <button type="button" id="authPasswordToggle" onclick="togglePasswordVisibility('authPassword','authPasswordToggle')" aria-label="Mostrar senha" class="absolute inset-y-0 right-0 px-3.5 text-lg text-brand-800 hover:text-brand-600 transition">👁️</button>
+            </div>
+            <button type="button" id="forgotPasswordLink" onclick="toggleForgotPasswordBox()" class="mt-2 text-xs font-bold text-brand-700 hover:underline">Esqueci a senha</button>
+          </div>
+
+          <!-- Esqueci a senha -->
+          <div id="forgotPasswordBox" class="hidden space-y-2 bg-brand-50/70 border border-brand-100 rounded-2xl p-3">
+            <p class="text-xs font-bold text-brand-900">Redefinir senha</p>
+            <p class="text-[11px] text-slate-600">Informe o e-mail no campo acima e escolha uma nova senha.</p>
+            <div class="relative">
+              <input id="forgotNewPassword" type="password" autocomplete="new-password" placeholder="Nova senha (mínimo 6 caracteres)" class="form-input !mt-0 !py-2 !text-xs !pr-12">
+              <button type="button" id="forgotNewPasswordToggle" onclick="togglePasswordVisibility('forgotNewPassword','forgotNewPasswordToggle')" aria-label="Mostrar senha" class="absolute inset-y-0 right-0 px-3.5 text-base text-brand-800 hover:text-brand-600 transition">👁️</button>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button type="button" onclick="resetPassword()" class="btn !py-2 !px-3 !text-xs flex-1">Salvar nova senha</button>
+              <button type="button" onclick="toggleForgotPasswordBox()" class="btn secondary !py-2 !px-3 !text-xs">Cancelar</button>
+            </div>
+          </div>
+
+          <button type="submit" id="authSubmitBtn" class="btn w-full py-3 text-base shadow-md">
+            Entrar no PJ fitnes
+          </button>
+        </form>
+
+        <!-- Configuração opcional de nuvem Firebase (sem campo de e-mail de treinador) -->
+        <div class="mt-5 pt-4 border-t border-brand-100 text-xs text-slate-600">
+          <button type="button" onclick="toggleFirebaseConfigBox()" class="w-full flex items-center justify-between font-bold text-brand-800 py-1">
+            <span>☁️ Nuvem Firebase (opcional)</span>
+            <span id="firebaseToggleIcon">＋</span>
+          </button>
+          <div id="firebaseConfigBox" class="hidden mt-2.5 space-y-2 bg-brand-50/70 border border-brand-100 rounded-2xl p-3">
+            <input id="fbApiKey" type="text" placeholder="apiKey" class="form-input !mt-0 !py-2 !text-xs">
+            <input id="fbAuthDomain" type="text" placeholder="authDomain" class="form-input !mt-0 !py-2 !text-xs">
+            <input id="fbProjectId" type="text" placeholder="projectId" class="form-input !mt-0 !py-2 !text-xs">
+            <input id="fbAppId" type="text" placeholder="appId" class="form-input !mt-0 !py-2 !text-xs">
+            <div class="flex gap-2 pt-1">
+              <button type="button" onclick="saveFirebaseConfig()" class="btn !py-2 !px-3 !text-xs flex-1">Salvar nuvem</button>
+              <button type="button" onclick="clearFirebaseConfig()" class="btn secondary !py-2 !px-3 !text-xs">Limpar</button>
+            </div>
+            <p id="firebaseStatusText" class="text-[11px] text-brand-800 font-medium"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APLICAÇÃO PRINCIPAL (APÓS LOGIN) -->
+  <div id="appScreen" class="hidden">
+    <!-- Cabeçalho Verde com Halter Branco e Nome PJ fitnes -->
+    <header class="bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 text-white px-4 py-4 shadow-md sticky top-0 z-30">
+      <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-12 h-12 rounded-2xl bg-brand-600 border border-brand-300 flex items-center justify-center shrink-0 shadow">
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Halter PJ fitnes">
+              <rect x="6" y="20" width="8" height="24" rx="3" fill="#FFFFFF"/>
+              <rect x="16" y="15" width="8" height="34" rx="3" fill="#FFFFFF"/>
+              <rect x="24" y="28" width="16" height="8" rx="2" fill="#FFFFFF"/>
+              <rect x="40" y="15" width="8" height="34" rx="3" fill="#FFFFFF"/>
+              <rect x="50" y="20" width="8" height="24" rx="3" fill="#FFFFFF"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight leading-none">PJ fitnes</h1>
+              <span id="roleBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white text-brand-800">Aluno</span>
+            </div>
+            <p id="userHeaderInfo" class="text-xs sm:text-sm text-brand-100 truncate mt-1"></p>
+          </div>
+        </div>
+
+        <button type="button" onclick="logoutUser()" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 transition shrink-0">
+          Sair
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-3.5 sm:px-5 pt-2">
+      <!-- Navegação Principal -->
+      <div class="nav-scroll my-2">
+        <button type="button" id="navTrainerBtn" class="nav-btn hidden" onclick="tab('trainer', this)">
+          🏋️‍♂️ Painel do Treinador
+        </button>
+        <button type="button" id="navTrainBtn" class="nav-btn active" onclick="tab('train', this)">
+          Treino
+        </button>
+        <button type="button" class="nav-btn" onclick="tab('history', this)">
+          Histórico
+        </button>
+        <button type="button" class="nav-btn" onclick="tab('stats', this)">
+          Evolução
+        </button>
+        <button type="button" class="nav-btn" onclick="tab('calendar', this)">
+          Calendário
+        </button>
+      </div>
+
+      <!-- SEÇÃO 1: PAINEL EXCLUSIVO DO TREINADOR (PROFESSOR / ADMIN) -->
+      <section id="trainer" class="hidden">
+        <div class="card">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div>
+              <h2 class="text-lg font-extrabold text-brand-900">Painel do Treinador</h2>
+              <p class="text-xs sm:text-sm text-slate-600">
+                Cadastre alunos, defina as letras de treino (A até H) de cada um e envie a ficha personalizada.
+              </p>
+            </div>
+          </div>
+
+          <!-- Cadastrar novo aluno -->
+          <form id="addStudentForm" onsubmit="handleCreateStudent(event)" class="bg-brand-50 border border-brand-200 rounded-2xl p-3.5 mb-4">
+            <div class="text-xs font-extrabold uppercase tracking-wide text-brand-800 mb-2">
+              ＋ Cadastrar novo aluno
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <input id="newStudentName" type="text" placeholder="Nome do aluno" class="form-input !mt-0" required>
+              <input id="newStudentEmail" type="email" placeholder="E-mail do aluno" class="form-input !mt-0" required>
+              <button type="submit" class="btn w-full">Cadastrar aluno</button>
+            </div>
+          </form>
+
+          <!-- Selecionar aluno cadastrado -->
+          <div class="mb-4">
+            <label class="block text-xs font-bold uppercase tracking-wide text-brand-800 mb-1">
+              Selecionar aluno para editar a ficha
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <select id="studentSelect" onchange="selectStudent(this.value)" class="form-select !mt-0 flex-1"></select>
+              <button type="button" onclick="deleteSelectedStudent()" class="btn danger shrink-0">
+                Remover aluno
+              </button>
+            </div>
+            <p id="selectedStudentSummary" class="text-xs text-slate-600 mt-1.5"></p>
+          </div>
+
+          <!-- Gerenciamento de letras dinâmicas (A até H) do aluno selecionado -->
+          <div class="border-t border-brand-100 pt-4">
+            <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+              <span class="text-xs font-extrabold uppercase tracking-wide text-brand-800">
+                Letras de treino deste aluno (A até H)
+              </span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="addWorkoutLetterToStudent()" class="btn secondary !py-2 !px-3 !text-xs">
+                  ＋ Adicionar letra
+                </button>
+                <button type="button" onclick="removeWorkoutLetterFromStudent()" class="btn danger !py-2 !px-3 !text-xs">
+                  − Remover letra atual
+                </button>
+              </div>
+            </div>
+            <div id="trainerLetterTabs" class="nav-scroll mb-3"></div>
+          </div>
+
+          <!-- Nome da letra de treino e cardio -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-bold text-brand-900">Título da letra de treino</label>
+              <input id="trainerPlanName" type="text" class="form-input" placeholder="Ex.: Peito, ombros e tríceps">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-brand-900">Cardio na esteira (minutos)</label>
+              <input id="trainerCardioMinutes" type="number" min="0" max="180" class="form-input" placeholder="30">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-xs font-bold text-brand-900">Orientação do cardio para este treino</label>
+            <input id="trainerCardioNote" type="text" class="form-input" placeholder="Ex.: Faça ao final do treino progredindo inclinação e velocidade">
+          </div>
+
+          <!-- Lista editável de exercícios da letra selecionada -->
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wide text-brand-800">
+              Exercícios desta letra
+            </span>
+            <span class="text-[11px] text-slate-500">Nome • Séries • Repetições • Descanso (s)</span>
+          </div>
+          <div id="trainerExercisesList" class="space-y-3 mb-4"></div>
+
+          <!-- Ações do Treinador -->
+          <div class="flex flex-wrap gap-2.5 pt-2 border-t border-brand-100">
+            <button type="button" onclick="addExerciseToTrainerPlan()" class="btn secondary">
+              ＋ Adicionar exercício
+            </button>
+            <button type="button" onclick="saveAndSendStudentPlan()" class="btn">
+              💾 Salvar e enviar ficha para o aluno
+            </button>
+            <button type="button" onclick="restoreDefaultABCForStudent()" class="btn secondary">
+              Restaurar base ABC
+            </button>
+          </div>
+        </div>
+
+        <!-- Acompanhamento rápido das sessões do aluno selecionado -->
+        <div class="card">
+          <h3 class="text-base font-extrabold text-brand-900 mb-1">Histórico recente do aluno selecionado</h3>
+          <p class="text-xs text-slate-600 mb-3">Acompanhe os treinos concluídos e cargas registradas por este aluno.</p>
+          <div id="trainerStudentHistory" class="space-y-2.5"></div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 2: TREINO DO ALUNO -->
+      <section id="train">
+        <div class="nav-scroll my-2" id="workoutTabs"></div>
+
+        <div class="card">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h2 id="wname" class="text-lg font-extrabold text-brand-900"></h2>
+              <p id="progressText" class="text-xs sm:text-sm text-slate-600 mt-0.5"></p>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 shrink-0">
+              Ficha do Professor
+            </span>
+          </div>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div id="exercises"></div>
+
+        <!-- Cardio na esteira -->
+        <div class="card" id="cardioCard">
+          <h3 id="cardioTitle" class="text-base font-extrabold text-brand-900">Cardio — 30 minutos (esteira)</h3>
+          <p id="cardioDesc" class="text-xs sm:text-sm text-slate-600 mt-1">
+            Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:
+          </p>
+          <div class="overflow-x-auto my-3">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-brand-50 text-brand-900 border-b-2 border-brand-200">
+                  <th class="py-2 px-3 font-bold">Tempo (min)</th>
+                  <th class="py-2 px-3 font-bold">Inclinação (%)</th>
+                  <th class="py-2 px-3 font-bold">Velocidade (km/h)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-brand-100">
+                <tr>
+                  <td class="py-2 px-3">0–6</td>
+                  <td class="py-2 px-3">6</td>
+                  <td class="py-2 px-3">4,5</td>
+                </tr>
+                <tr>
+                  <td class="py-2 px-3">6–12</td>
+                  <td class="py-2 px-3">8</td>
+                  <td class="py-2 px-3">4,8</td>
+                </tr>
+                <tr>
+                  <td class="py-2 px-3">12–18</td>
+                  <td class="py-2 px-3">10</td>
+                  <td class="py-2 px-3">4,5</td>
+                </tr>
+                <tr>
+                  <td class="py-2 px-3">18–24</td>
+                  <td class="py-2 px-3">12</td>
+                  <td class="py-2 px-3">4,2</td>
+                </tr>
+                <tr>
+                  <td class="py-2 px-3">24–30</td>
+                  <td class="py-2 px-3">6</td>
+                  <td class="py-2 px-3">4,5</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <label class="inline-flex items-center gap-2.5 text-sm font-bold text-brand-900 cursor-pointer select-none">
+            <input id="cardioDone" type="checkbox" class="w-5 h-5 accent-brand-600 rounded cursor-pointer">
+            <span>Marcar cardio como concluído</span>
+          </label>
+        </div>
+
+        <div class="card flex flex-wrap gap-2.5">
+          <button type="button" class="btn" onclick="finishSession()">Finalizar e salvar sessão</button>
+          <button type="button" class="btn secondary" onclick="saveDraft()">Salvar alterações</button>
+          <button type="button" class="btn secondary" onclick="clearCurrent()">Limpar treino atual</button>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 3: HISTÓRICO -->
+      <section id="history" class="hidden">
+        <div class="card">
+          <h2 class="text-lg font-extrabold text-brand-900 mb-1">Histórico de sessões</h2>
+          <p class="text-xs sm:text-sm text-slate-600 mb-3">Seus treinos finalizados ficam salvos na sua conta.</p>
+          <div id="historyList" class="space-y-3 mb-4"></div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="btn secondary" onclick="exportData()">Exportar backup</button>
+            <button type="button" class="btn secondary" onclick="importBackup()">Importar backup</button>
+            <input id="backupFile" type="file" accept=".json,application/json" class="hidden" onchange="readBackup(this)">
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 4: EVOLUÇÃO -->
+      <section id="stats" class="hidden">
+        <div class="card">
+          <h2 class="text-lg font-extrabold text-brand-900 mb-3">Resumo</h2>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="text-xs font-bold uppercase text-brand-800">Sessões registradas</span>
+              <strong id="sessionsStat">0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="text-xs font-bold uppercase text-brand-800">Treinos neste mês</span>
+              <strong id="monthStat">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="text-lg font-extrabold text-brand-900 mb-2">Evolução de carga</h2>
+          <select id="exerciseSelect" onchange="drawChart()" class="form-select mb-3"></select>
+          <div class="bg-brand-50/60 border border-brand-100 rounded-2xl p-2">
+            <canvas id="chart" class="w-full h-56 block"></canvas>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Registre cargas numéricas nos treinos para visualizar a evolução no gráfico.</p>
+        </div>
+      </section>
+
+      <!-- SEÇÃO 5: CALENDÁRIO -->
+      <section id="calendar" class="hidden">
+        <div class="card">
+          <h2 class="text-lg font-extrabold text-brand-900 mb-3">Calendário de treinos</h2>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <button type="button" class="btn secondary !py-2 !px-3" onclick="changeMonth(-1)">◀</button>
+            <strong id="monthLabel" class="text-sm sm:text-base font-extrabold capitalize text-brand-900"></strong>
+            <button type="button" class="btn secondary !py-2 !px-3" onclick="changeMonth(1)">▶</button>
+          </div>
+          <div class="month-grid" id="cal"></div>
+        </div>
+      </section>
+
+      <footer class="text-center text-xs text-slate-500 py-5">
+        <strong>PJ fitnes</strong> • Dados salvos por conta com suporte a backup JSON.
+      </footer>
+    </main>
+
+    <!-- BARRA FLUTUANTE DE DESCANSO -->
+    <div id="restBar" class="restbar hidden">
+      <div class="restinfo">
+        <span id="restLabel"></span>
+        <strong id="restTime">0:00</strong>
+        <div class="rprogress">
+          <div id="restFill"></div>
+        </div>
+      </div>
+      <div class="restctl">
+        <button type="button" class="btn secondary" onclick="adjustRest(-15)">−15s</button>
+        <button type="button" class="btn secondary" onclick="adjustRest(15)">+15s</button>
+        <button type="button" class="btn danger" onclick="stopRest()">Parar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CONSTANTES E FICHA BASE ABC ORIGINAL
+    // =========================================================================
+    const ALLOWED_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+    const DEFAULT_PLANS = {
+      A: {
+        name: "Peito, ombros e tríceps",
+        cardioMinutes: 30,
+        cardioNote: "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:",
+        items: [
+          ["Supino reto", 3, "8–12", 60, ""],
+          ["Supino inclinado com halteres", 3, "8–12", 60, ""],
+          ["Cross over na polia alta", 3, "12–15", 60, ""],
+          ["Crucifixo na máquina", 2, "12–15", 60, ""],
+          ["Desenvolvimento de ombros", 3, "8–12", 60, ""],
+          ["Elevação lateral", 3, "12–15", 45, ""],
+          ["Crucifixo na máquina invertido", 3, "12–15", 45, ""],
+          ["Tríceps na polia", 3, "10–15", 60, ""],
+          ["Tríceps francês", 2, "10–12", 60, ""]
+        ]
+      },
+      B: {
+        name: "Pernas e abdômen",
+        cardioMinutes: 30,
+        cardioNote: "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:",
+        items: [
+          ["Agachamento", 3, "8–12", 60, ""],
+          ["Leg press", 3, "10–12", 60, ""],
+          ["Cadeira extensora", 3, "10–15", 60, ""],
+          ["Mesa flexora", 3, "10–15", 60, ""],
+          ["Stiff com halteres", 3, "10–12", 60, ""],
+          ["Elevação de quadril", 3, "10–12", 60, ""],
+          ["Panturrilha", 4, "12–20", 45, ""],
+          ["Abdominal", 3, "12–15", 45, ""]
+        ]
+      },
+      C: {
+        name: "Costas e bíceps",
+        cardioMinutes: 30,
+        cardioNote: "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:",
+        items: [
+          ["Puxada frontal", 3, "8–12", 60, ""],
+          ["Remada baixa", 3, "8–12", 60, ""],
+          ["Remada unilateral com halteres", 3, "10–12 por lado", 60, ""],
+          ["Pulldown com braços estendidos", 2, "12–15", 60, ""],
+          ["Remada aberta com halteres", 3, "10–12", 60, ""],
+          ["Rosca direta", 3, "8–12", 60, ""],
+          ["Rosca martelo", 2, "10–12", 45, ""]
+        ]
+      }
+    };
+
+    // =========================================================================
+    // ESTADO DA APLICAÇÃO E ARMAZENAMENTO LOCAL POR CONTA
+    // =========================================================================
+    let authMode = "login";
+    let currentUser = null; // { name, email, role: 'coach' | 'student' }
+    let currentLetter = "A";
+    let trainerSelectedEmail = "";
+    let trainerSelectedLetter = "A";
+    let monthOffset = 0;
+    let restTimerState = { end: 0, total: 1, intervalId: null };
+
+    function normEmail(email) {
+      return String(email || "").trim().toLowerCase();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function readJson(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (err) {
+        console.error("Erro ao ler armazenamento:", err);
+        return fallback;
+      }
+    }
+
+    function writeJson(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        console.error("Erro ao salvar no armazenamento:", err);
+      }
+    }
+
+    // =========================================================================
+    // CONFIGURAÇÃO OPCIONAL DO FIREBASE (SEM CAMPO DE E-MAIL DE TREINADOR)
+    // =========================================================================
+    function getFirebaseConfig() {
+      return readJson("pj_fitnes_firebase_config_v1", {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        appId: ""
+      });
+    }
+
+    function toggleFirebaseConfigBox() {
+      const box = document.getElementById("firebaseConfigBox");
+      const icon = document.getElementById("firebaseToggleIcon");
+      if (!box || !icon) return;
+      const willOpen = box.classList.contains("hidden");
+      box.classList.toggle("hidden", !willOpen);
+      icon.textContent = willOpen ? "−" : "＋";
+      if (willOpen) {
+        loadFirebaseConfigInputs();
+      }
+    }
+
+    function loadFirebaseConfigInputs() {
+      const cfg = getFirebaseConfig();
+      document.getElementById("fbApiKey").value = cfg.apiKey || "";
+      document.getElementById("fbAuthDomain").value = cfg.authDomain || "";
+      document.getElementById("fbProjectId").value = cfg.projectId || "";
+      document.getElementById("fbAppId").value = cfg.appId || "";
+      updateFirebaseStatusText(cfg);
+    }
+
+    function updateFirebaseStatusText(cfg) {
+      const statusEl = document.getElementById("firebaseStatusText");
+      if (!statusEl) return;
+      const configured = Boolean(cfg?.apiKey && cfg?.projectId);
+      statusEl.textContent = configured
+        ? `Configuração salva para o projeto "${cfg.projectId}".`
+        : "Modo local ativo no navegador. Preencha os campos acima se quiser salvar a configuração do Firebase.";
+    }
+
+    function saveFirebaseConfig() {
+      const cfg = {
+        apiKey: document.getElementById("fbApiKey").value.trim(),
+        authDomain: document.getElementById("fbAuthDomain").value.trim(),
+        projectId: document.getElementById("fbProjectId").value.trim(),
+        appId: document.getElementById("fbAppId").value.trim()
+      };
+      writeJson("pj_fitnes_firebase_config_v1", cfg);
+      updateFirebaseStatusText(cfg);
+      showToast("Configuração do Firebase salva!");
+    }
+
+    function clearFirebaseConfig() {
+      const emptyCfg = { apiKey: "", authDomain: "", projectId: "", appId: "" };
+      writeJson("pj_fitnes_firebase_config_v1", emptyCfg);
+      loadFirebaseConfigInputs();
+      showToast("Configuração do Firebase limpa.");
+    }
+
+    function showToast(message, type = "success") {
+      const banner = document.getElementById("toastBanner");
+      if (!banner) return;
+
+      banner.className = "fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl border transition-all";
+      if (type === "error") {
+        banner.classList.add("bg-red-50", "text-red-900", "border-red-200");
+      } else {
+        banner.classList.add("bg-brand-700", "text-white", "border-brand-400");
+      }
+      banner.textContent = message;
+      banner.classList.remove("hidden");
+
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 3200);
+    }
+
+    // =========================================================================
+    // BANCO DE CONTAS, ALUNOS E FICHAS PERSONALIZADAS
+    // =========================================================================
+    function getAccounts() {
+      return readJson("pj_fitnes_accounts_v1", {});
+    }
+
+    function saveAccounts(accounts) {
+      writeJson("pj_fitnes_accounts_v1", accounts);
+    }
+
+    function getCoachAccount(accountsObj = null) {
+      const accounts = accountsObj || getAccounts();
+      const coachEntry = Object.values(accounts).find(acc => acc && acc.role === "coach");
+      return coachEntry ? { ...coachEntry, email: normEmail(coachEntry.email) } : null;
+    }
+
+    function hasExistingCoach(accountsObj = null) {
+      return Boolean(getCoachAccount(accountsObj));
+    }
+
+    function isAuthorizedCoach(email, accountsObj = null) {
+      const cleanEmail = normEmail(email);
+      if (!cleanEmail) return false;
+      const coach = getCoachAccount(accountsObj);
+      return Boolean(coach && coach.email === cleanEmail && coach.role === "coach");
+    }
+
+    function syncCoachRegistrationAvailability() {
+      const coachCheckbox = document.getElementById("authIsCoach");
+      const coachOptionLabel = document.getElementById("coachOptionLabel");
+      const coachTakenNotice = document.getElementById("coachTakenNotice");
+      if (!coachCheckbox || !coachOptionLabel || !coachTakenNotice) return;
+
+      const coachExists = hasExistingCoach();
+      coachCheckbox.disabled = coachExists;
+      if (coachExists) {
+        coachCheckbox.checked = false;
+        coachOptionLabel.classList.add("opacity-50", "cursor-not-allowed");
+        coachOptionLabel.classList.remove("cursor-pointer");
+        coachTakenNotice.classList.remove("hidden");
+      } else {
+        coachOptionLabel.classList.remove("opacity-50", "cursor-not-allowed");
+        coachOptionLabel.classList.add("cursor-pointer");
+        coachTakenNotice.classList.add("hidden");
+      }
+    }
+
+    function getStudentsRegistry() {
+      const registry = readJson("pj_fitnes_students_v1", {});
+      // Garante um aluno exemplo inicial caso ainda não exista nenhum
+      if (Object.keys(registry).length === 0) {
+        const demoEmail = "aluno@pjfitnes.com";
+        registry[demoEmail] = {
+          name: "Aluno Exemplo",
+          email: demoEmail,
+          plans: JSON.parse(JSON.stringify(DEFAULT_PLANS)),
+          drafts: {},
+          history: []
+        };
+        writeJson("pj_fitnes_students_v1", registry);
+      }
+      return registry;
+    }
+
+    function saveStudentsRegistry(registry) {
+      writeJson("pj_fitnes_students_v1", registry);
+    }
+
+    function ensureStudentRecord(email, nameFallback = "") {
+      const cleanEmail = normEmail(email);
+      const registry = getStudentsRegistry();
+      if (!registry[cleanEmail]) {
+        const displayName = nameFallback.trim() || cleanEmail.split("@")[0] || "Aluno";
+        registry[cleanEmail] = {
+          name: displayName,
+          email: cleanEmail,
+          plans: JSON.parse(JSON.stringify(DEFAULT_PLANS)),
+          drafts: {},
+          history: []
+        };
+        saveStudentsRegistry(registry);
+      } else if (nameFallback && !registry[cleanEmail].name) {
+        registry[cleanEmail].name = nameFallback.trim();
+        saveStudentsRegistry(registry);
+      }
+      return registry[cleanEmail];
+    }
+
+    function getActiveStudentEmail() {
+      if (!currentUser) return "";
+      if (currentUser.role === "coach") {
+        return trainerSelectedEmail || normEmail(currentUser.email);
+      }
+      return normEmail(currentUser.email);
+    }
+
+    function getActiveStudentData() {
+      const targetEmail = getActiveStudentEmail();
+      if (!targetEmail) {
+        return {
+          name: "Aluno",
+          email: "",
+          plans: JSON.parse(JSON.stringify(DEFAULT_PLANS)),
+          drafts: {},
+          history: []
+        };
+      }
+      return ensureStudentRecord(targetEmail, currentUser?.name || "");
+    }
+
+    function getPlans() {
+      const student = getActiveStudentData();
+      return student.plans || JSON.parse(JSON.stringify(DEFAULT_PLANS));
+    }
+
+    // =========================================================================
+    // AUTENTICAÇÃO (LOGIN / CADASTRO / SAIR)
+    // =========================================================================
+    function togglePasswordVisibility(inputId, btnId) {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      if (!input || !btn) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.textContent = show ? "🙈" : "👁️";
+      btn.setAttribute("aria-label", show ? "Ocultar senha" : "Mostrar senha");
+    }
+
+    function toggleForgotPasswordBox() {
+      const box = document.getElementById("forgotPasswordBox");
+      const willOpen = box.classList.contains("hidden");
+      box.classList.toggle("hidden", !willOpen);
+      document.getElementById("forgotNewPassword").value = "";
+      if (willOpen) document.getElementById("forgotNewPassword").focus();
+    }
+
+    function resetPassword() {
+      const email = normEmail(document.getElementById("authEmail").value);
+      const newPassword = document.getElementById("forgotNewPassword").value;
+      if (!email) {
+        showToast("Digite seu e-mail no campo acima.", "error");
+        return;
+      }
+      if (newPassword.length < 6) {
+        showToast("A nova senha deve ter pelo menos 6 caracteres.", "error");
+        return;
+      }
+      const accounts = getAccounts();
+      if (!accounts[email]) {
+        showToast("E-mail não encontrado neste aparelho.", "error");
+        return;
+      }
+      accounts[email].passwordHash = btoa(newPassword);
+      saveAccounts(accounts);
+      document.getElementById("forgotNewPassword").value = "";
+      document.getElementById("authPassword").value = "";
+      document.getElementById("forgotPasswordBox").classList.add("hidden");
+      showToast("Senha redefinida! Entre com a nova senha.");
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const loginBtn = document.getElementById("authModeLogin");
+      const registerBtn = document.getElementById("authModeRegister");
+      const nameBox = document.getElementById("registerNameBox");
+      const coachBox = document.getElementById("registerCoachBox");
+      const coachCheckbox = document.getElementById("authIsCoach");
+      const submitBtn = document.getElementById("authSubmitBtn");
+
+      if (mode === "login") {
+        loginBtn.className = "py-2.5 rounded-lg text-sm font-bold bg-brand-600 text-white shadow-sm transition";
+        registerBtn.className = "py-2.5 rounded-lg text-sm font-bold text-brand-800 hover:bg-brand-100 transition";
+        nameBox.classList.add("hidden");
+        coachBox.classList.add("hidden");
+        if (coachCheckbox) coachCheckbox.checked = false;
+        submitBtn.textContent = "Entrar no PJ fitnes";
+        document.getElementById("forgotPasswordLink").classList.remove("hidden");
+      } else {
+        registerBtn.className = "py-2.5 rounded-lg text-sm font-bold bg-brand-600 text-white shadow-sm transition";
+        loginBtn.className = "py-2.5 rounded-lg text-sm font-bold text-brand-800 hover:bg-brand-100 transition";
+        nameBox.classList.remove("hidden");
+        coachBox.classList.remove("hidden");
+        syncCoachRegistrationAvailability();
+        submitBtn.textContent = "Criar conta no PJ fitnes";
+        document.getElementById("forgotPasswordLink").classList.add("hidden");
+        document.getElementById("forgotPasswordBox").classList.add("hidden");
+      }
+    }
+
+    function handleAuthSubmit(event) {
+      event.preventDefault();
+      const email = normEmail(document.getElementById("authEmail").value);
+      const password = document.getElementById("authPassword").value;
+      const nameInput = document.getElementById("authName").value.trim();
+      const isCoachSelected = Boolean(document.getElementById("authIsCoach")?.checked);
+
+      if (!email || !password) {
+        showToast("Preencha o e-mail e a senha.", "error");
+        return;
+      }
+
+      if (password.length < 6) {
+        showToast("A senha deve ter pelo menos 6 caracteres.", "error");
+        return;
+      }
+
+      const accounts = getAccounts();
+
+      if (authMode === "register") {
+        if (accounts[email]) {
+          showToast("Este e-mail já está cadastrado. Faça login.", "error");
+          return;
+        }
+
+        if (isCoachSelected && hasExistingCoach(accounts)) {
+          syncCoachRegistrationAvailability();
+          showToast("Já existe uma conta de treinador cadastrada. Apenas uma conta de treinador é permitida.", "error");
+          return;
+        }
+
+        const displayName = nameInput || email.split("@")[0];
+        const role = (isCoachSelected && !hasExistingCoach(accounts)) ? "coach" : "student";
+
+        accounts[email] = {
+          name: displayName,
+          email,
+          passwordHash: btoa(password),
+          role
+        };
+        saveAccounts(accounts);
+
+        if (role === "student") {
+          ensureStudentRecord(email, displayName);
+        }
+
+        syncCoachRegistrationAvailability();
+
+        enterApp({
+          name: displayName,
+          email,
+          role
+        });
+        showToast(
+          role === "coach"
+            ? `Conta única de treinador criada! Bem-vindo, ${displayName}.`
+            : `Conta criada! Bem-vindo ao PJ fitnes, ${displayName}.`
+        );
+      } else {
+        const existing = accounts[email];
+        if (!existing) {
+          // Permite primeiro acesso direto apenas se o e-mail já foi cadastrado pelo treinador como aluno
+          const registry = getStudentsRegistry();
+          const preRegisteredStudent = registry[email];
+          if (preRegisteredStudent) {
+            const displayName = preRegisteredStudent.name || email.split("@")[0];
+            accounts[email] = {
+              name: displayName,
+              email,
+              passwordHash: btoa(password),
+              role: "student"
+            };
+            writeJson("pj_fitnes_accounts_v1", accounts);
+            ensureStudentRecord(email, displayName);
+
+            enterApp({
+              name: displayName,
+              email,
+              role: "student"
+            });
+            showToast(`Bem-vindo ao PJ fitnes, ${displayName}!`);
+            return;
+          }
+
+          showToast("E-mail não encontrado. Crie uma conta ou peça para o treinador cadastrar seu e-mail.", "error");
+          return;
+        }
+
+        if (existing.passwordHash !== btoa(password)) {
+          showToast("Senha incorreta. Tente novamente.", "error");
+          return;
+        }
+
+        const role = existing.role === "coach" ? "coach" : "student";
+        if (role === "student") {
+          ensureStudentRecord(existing.email, existing.name);
+        }
+
+        enterApp({
+          name: existing.name || existing.email.split("@")[0],
+          email: existing.email,
+          role
+        });
+        showToast(`Olá, ${existing.name || existing.email}!`);
+      }
+    }
+
+    function enterApp(user) {
+      const accounts = getAccounts();
+      const cleanEmail = normEmail(user.email);
+      const verifiedRole = isAuthorizedCoach(cleanEmail, accounts) ? "coach" : "student";
+      currentUser = { ...user, email: cleanEmail, role: verifiedRole };
+      writeJson("pj_fitnes_session_v1", currentUser);
+
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("appScreen").classList.remove("hidden");
+
+      const roleBadge = document.getElementById("roleBadge");
+      const navTrainerBtn = document.getElementById("navTrainerBtn");
+      const userHeaderInfo = document.getElementById("userHeaderInfo");
+
+      if (verifiedRole === "coach") {
+        roleBadge.textContent = "Treinador";
+        navTrainerBtn.classList.remove("hidden");
+        userHeaderInfo.textContent = `${currentUser.name} • ${currentUser.email}`;
+
+        const registry = getStudentsRegistry();
+        const emails = Object.keys(registry);
+        trainerSelectedEmail = emails[0] || "";
+        const studentObj = registry[trainerSelectedEmail];
+        const letters = Object.keys(studentObj?.plans || DEFAULT_PLANS);
+        trainerSelectedLetter = letters[0] || "A";
+
+        renderTrainerStudentsList();
+        tab("trainer", navTrainerBtn);
+      } else {
+        roleBadge.textContent = "Aluno";
+        navTrainerBtn.classList.add("hidden");
+        const studentRecord = ensureStudentRecord(currentUser.email, currentUser.name);
+        userHeaderInfo.textContent = `${studentRecord.name} • ${currentUser.email}`;
+
+        const letters = Object.keys(studentRecord.plans || DEFAULT_PLANS);
+        currentLetter = letters.includes(currentLetter) ? currentLetter : (letters[0] || "A");
+
+        const navTrainBtn = document.getElementById("navTrainBtn");
+        tab("train", navTrainBtn);
+        renderStudentWorkout();
+      }
+
+      refreshSecondaryViews();
+    }
+
+    function logoutUser() {
+      stopRest();
+      currentUser = null;
+      localStorage.removeItem("pj_fitnes_session_v1");
+      document.getElementById("appScreen").classList.add("hidden");
+      document.getElementById("authScreen").classList.remove("hidden");
+      document.getElementById("authPassword").value = "";
+      syncCoachRegistrationAvailability();
+      showToast("Você saiu da conta.");
+    }
+
+    // =========================================================================
+    // NAVEGAÇÃO ENTRE ABAS
+    // =========================================================================
+    function tab(sectionId, btnEl) {
+      if (sectionId === "trainer" && !isAuthorizedCoach(currentUser?.email)) {
+        showToast("Apenas a conta de treinador cadastrada pode acessar o Painel do Treinador.", "error");
+        return;
+      }
+
+      document.querySelectorAll("main > section").forEach(sec => sec.classList.add("hidden"));
+      const target = document.getElementById(sectionId);
+      if (target) target.classList.remove("hidden");
+
+      document.querySelectorAll("main > .nav-scroll .nav-btn").forEach(btn => btn.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+
+      if (sectionId === "trainer") {
+        renderTrainerStudentsList();
+      } else if (sectionId === "train") {
+        renderStudentWorkout();
+      }
+
+      refreshSecondaryViews();
+    }
+
+    function refreshSecondaryViews() {
+      renderHistory();
+      renderStats();
+      renderCalendar();
+    }
+
+    // =========================================================================
+    // PAINEL EXCLUSIVO DO TREINADOR (ALUNOS, LETRAS A-H, EXERCÍCIOS E CARDIO)
+    // =========================================================================
+    function handleCreateStudent(event) {
+      event.preventDefault();
+      if (!isAuthorizedCoach(currentUser?.email)) {
+        showToast("Acesso restrito à conta do treinador.", "error");
+        return;
+      }
+
+      const name = document.getElementById("newStudentName").value.trim();
+      const email = normEmail(document.getElementById("newStudentEmail").value);
+
+      if (!name || !email) {
+        showToast("Informe o nome e o e-mail do aluno.", "error");
+        return;
+      }
+
+      const registry = getStudentsRegistry();
+      if (registry[email]) {
+        trainerSelectedEmail = email;
+        renderTrainerStudentsList();
+        showToast("Aluno já cadastrado. Ficha selecionada para edição.");
+        return;
+      }
+
+      registry[email] = {
+        name,
+        email,
+        plans: JSON.parse(JSON.stringify(DEFAULT_PLANS)),
+        drafts: {},
+        history: []
+      };
+      saveStudentsRegistry(registry);
+
+      trainerSelectedEmail = email;
+      trainerSelectedLetter = "A";
+      document.getElementById("newStudentName").value = "";
+      document.getElementById("newStudentEmail").value = "";
+
+      renderTrainerStudentsList();
+      showToast(`Aluno "${name}" cadastrado com sucesso!`);
+    }
+
+    function selectStudent(email) {
+      trainerSelectedEmail = normEmail(email);
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      const letters = Object.keys(student?.plans || DEFAULT_PLANS);
+      trainerSelectedLetter = letters[0] || "A";
+      renderTrainerStudentsList();
+    }
+
+    function deleteSelectedStudent() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const keys = Object.keys(registry);
+
+      if (!trainerSelectedEmail || !registry[trainerSelectedEmail]) {
+        showToast("Selecione um aluno para remover.", "error");
+        return;
+      }
+
+      if (keys.length <= 1) {
+        showToast("Mantenha ao menos um aluno cadastrado no sistema.", "error");
+        return;
+      }
+
+      const removedName = registry[trainerSelectedEmail].name || trainerSelectedEmail;
+      delete registry[trainerSelectedEmail];
+      saveStudentsRegistry(registry);
+
+      trainerSelectedEmail = Object.keys(registry)[0] || "";
+      const nextLetters = Object.keys(registry[trainerSelectedEmail]?.plans || DEFAULT_PLANS);
+      trainerSelectedLetter = nextLetters[0] || "A";
+
+      renderTrainerStudentsList();
+      showToast(`Aluno "${removedName}" removido.`);
+    }
+
+    function renderTrainerStudentsList() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const emails = Object.keys(registry);
+
+      if (!trainerSelectedEmail || !registry[trainerSelectedEmail]) {
+        trainerSelectedEmail = emails[0] || "";
+      }
+
+      const selectEl = document.getElementById("studentSelect");
+      selectEl.innerHTML = emails.map(email => {
+        const st = registry[email];
+        const lettersCount = Object.keys(st.plans || {}).length;
+        return `<option value="${escapeHtml(email)}" ${email === trainerSelectedEmail ? "selected" : ""}>
+          ${escapeHtml(st.name)} (${escapeHtml(email)}) — ${lettersCount} treino(s)
+        </option>`;
+      }).join("");
+
+      const student = registry[trainerSelectedEmail];
+      if (!student) return;
+
+      const letters = Object.keys(student.plans || {});
+      if (!letters.includes(trainerSelectedLetter)) {
+        trainerSelectedLetter = letters[0] || "A";
+      }
+
+      document.getElementById("selectedStudentSummary").textContent =
+        `Editando ficha de ${student.name} (${student.email}) • Divisões ativas: ${letters.join(", ") || "Nenhuma"}`;
+
+      // Renderiza abas de letras (A até H) do aluno selecionado
+      const tabsEl = document.getElementById("trainerLetterTabs");
+      tabsEl.innerHTML = letters.map(letter => {
+        const planObj = student.plans[letter];
+        return `<button type="button" class="nav-btn ${letter === trainerSelectedLetter ? "active" : ""}" onclick="selectTrainerLetter('${letter}')">
+          Treino ${letter} — ${escapeHtml(planObj.name || "Sem nome")}
+        </button>`;
+      }).join("");
+
+      renderTrainerPlanEditor();
+      renderTrainerStudentHistory(student);
+    }
+
+    function selectTrainerLetter(letter) {
+      trainerSelectedLetter = letter;
+      renderTrainerStudentsList();
+    }
+
+    function addWorkoutLetterToStudent() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      if (!student) return;
+
+      if (!student.plans) student.plans = {};
+      const existingLetters = Object.keys(student.plans);
+
+      // Encontra a próxima letra disponível de A até H
+      const nextLetter = ALLOWED_LETTERS.find(l => !existingLetters.includes(l));
+      if (!nextLetter) {
+        showToast("Limite máximo de 8 divisões (A até H) atingido para este aluno.", "error");
+        return;
+      }
+
+      // Mantém ordem alfabética de A até H
+      const updatedPlans = {};
+      const newOrder = [...existingLetters, nextLetter].sort(
+        (a, b) => ALLOWED_LETTERS.indexOf(a) - ALLOWED_LETTERS.indexOf(b)
+      );
+
+      newOrder.forEach(l => {
+        if (l === nextLetter) {
+          updatedPlans[l] = {
+            name: `Treino ${l} personalizado`,
+            cardioMinutes: 30,
+            cardioNote: "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:",
+            items: [
+              ["Exercício inicial", 3, "10–12", 60, ""]
+            ]
+          };
+        } else {
+          updatedPlans[l] = student.plans[l];
+        }
+      });
+
+      student.plans = updatedPlans;
+      trainerSelectedLetter = nextLetter;
+      saveStudentsRegistry(registry);
+
+      renderTrainerStudentsList();
+      showToast(`Letra ${nextLetter} adicionada à ficha de ${student.name}.`);
+    }
+
+    function removeWorkoutLetterFromStudent() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      if (!student || !student.plans) return;
+
+      const letters = Object.keys(student.plans);
+      if (letters.length <= 1) {
+        showToast("O aluno precisa ter pelo menos uma letra de treino.", "error");
+        return;
+      }
+
+      const letterToRemove = trainerSelectedLetter;
+      delete student.plans[letterToRemove];
+      delete student.drafts?.[letterToRemove];
+
+      const remaining = Object.keys(student.plans);
+      trainerSelectedLetter = remaining[0] || "A";
+      saveStudentsRegistry(registry);
+
+      renderTrainerStudentsList();
+      showToast(`Letra ${letterToRemove} removida da ficha de ${student.name}.`);
+    }
+
+    function renderTrainerPlanEditor() {
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      const plan = student?.plans?.[trainerSelectedLetter];
+      if (!plan) return;
+
+      document.getElementById("trainerPlanName").value = plan.name || "";
+      document.getElementById("trainerCardioMinutes").value = plan.cardioMinutes ?? 30;
+      document.getElementById("trainerCardioNote").value = plan.cardioNote || "";
+
+      const listEl = document.getElementById("trainerExercisesList");
+      const items = plan.items || [];
+
+      if (items.length === 0) {
+        listEl.innerHTML = `<div class="p-4 rounded-xl bg-brand-50 text-xs text-slate-600 text-center">
+          Nenhum exercício nesta letra. Clique em "＋ Adicionar exercício".
+        </div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map((item, idx) => {
+        const exName = item[0] || "";
+        const setsCount = item[1] || 3;
+        const repsText = item[2] || "8–12";
+        const restSec = item[3] || 60;
+        const coachObs = item[4] || "";
+
+        return `
+          <div class="p-3.5 rounded-2xl border border-brand-200 bg-brand-50/40" data-ex-index="${idx}">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <span class="text-xs font-extrabold text-brand-800">Exercício ${idx + 1}</span>
+              <button type="button" onclick="removeExerciseFromTrainerPlan(${idx})" class="btn danger !py-1.5 !px-2.5 !text-xs">
+                Excluir
+              </button>
+            </div>
+            <div class="editor-row">
+              <input type="text" data-field="name" value="${escapeHtml(exName)}" placeholder="Nome do exercício">
+              <input type="number" min="1" max="12" data-field="sets" value="${setsCount}" title="Séries" placeholder="Séries">
+              <input type="text" data-field="reps" value="${escapeHtml(repsText)}" title="Repetições" placeholder="Repetições">
+              <input type="number" min="5" max="600" step="5" data-field="rest" value="${restSec}" title="Descanso (s)" placeholder="Descanso (s)">
+            </div>
+            <input type="text" data-field="obs" value="${escapeHtml(coachObs)}" placeholder="Observação técnica do treinador (opcional)" class="form-input !mt-2 !py-2 !text-xs">
+          </div>
+        `;
+      }).join("");
+    }
+
+    function collectTrainerExercisesFromDOM() {
+      const rows = [...document.querySelectorAll("#trainerExercisesList [data-ex-index]")];
+      return rows.map((row, idx) => {
+        const name = row.querySelector('[data-field="name"]')?.value.trim() || `Exercício ${idx + 1}`;
+        const sets = Math.max(1, parseInt(row.querySelector('[data-field="sets"]')?.value, 10) || 3);
+        const reps = row.querySelector('[data-field="reps"]')?.value.trim() || "8–12";
+        const rest = Math.max(5, parseInt(row.querySelector('[data-field="rest"]')?.value, 10) || 60);
+        const obs = row.querySelector('[data-field="obs"]')?.value.trim() || "";
+        return [name, sets, reps, rest, obs];
+      });
+    }
+
+    function addExerciseToTrainerPlan() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      const plan = student?.plans?.[trainerSelectedLetter];
+      if (!plan) return;
+
+      plan.name = document.getElementById("trainerPlanName").value.trim() || plan.name;
+      plan.cardioMinutes = Math.max(0, parseInt(document.getElementById("trainerCardioMinutes").value, 10) || 0);
+      plan.cardioNote = document.getElementById("trainerCardioNote").value.trim();
+      plan.items = collectTrainerExercisesFromDOM();
+      plan.items.push(["Novo exercício", 3, "8–12", 60, ""]);
+
+      saveStudentsRegistry(registry);
+      renderTrainerPlanEditor();
+    }
+
+    function removeExerciseFromTrainerPlan(index) {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      const plan = student?.plans?.[trainerSelectedLetter];
+      if (!plan) return;
+
+      plan.items = collectTrainerExercisesFromDOM();
+      plan.items.splice(index, 1);
+
+      saveStudentsRegistry(registry);
+      renderTrainerPlanEditor();
+      showToast("Exercício removido.");
+    }
+
+    function saveAndSendStudentPlan() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      const plan = student?.plans?.[trainerSelectedLetter];
+      if (!plan) return;
+
+      plan.name = document.getElementById("trainerPlanName").value.trim() || `Treino ${trainerSelectedLetter}`;
+      plan.cardioMinutes = Math.max(0, parseInt(document.getElementById("trainerCardioMinutes").value, 10) || 0);
+      plan.cardioNote = document.getElementById("trainerCardioNote").value.trim();
+      plan.items = collectTrainerExercisesFromDOM();
+
+      saveStudentsRegistry(registry);
+      renderTrainerStudentsList();
+      showToast(`Ficha do Treino ${trainerSelectedLetter} salva e enviada para ${student.name}!`);
+    }
+
+    function restoreDefaultABCForStudent() {
+      if (currentUser?.role !== "coach") return;
+      const registry = getStudentsRegistry();
+      const student = registry[trainerSelectedEmail];
+      if (!student) return;
+
+      student.plans = JSON.parse(JSON.stringify(DEFAULT_PLANS));
+      student.drafts = {};
+      trainerSelectedLetter = "A";
+      saveStudentsRegistry(registry);
+
+      renderTrainerStudentsList();
+      showToast(`Ficha base ABC restaurada para ${student.name}.`);
+    }
+
+    function renderTrainerStudentHistory(student) {
+      const box = document.getElementById("trainerStudentHistory");
+      const history = student?.history || [];
+
+      if (history.length === 0) {
+        box.innerHTML = `<p class="text-xs text-slate-500">Nenhuma sessão concluída por este aluno ainda.</p>`;
+        return;
+      }
+
+      box.innerHTML = history.slice(0, 6).map(session => {
+        const doneCount = (session.items || []).filter(x => x.done).length;
+        return `
+          <div class="p-3 rounded-xl bg-brand-50/70 border border-brand-100 text-xs">
+            <div class="font-bold text-brand-900">
+              Treino ${escapeHtml(session.workout)} — ${escapeHtml(session.name)}
+            </div>
+            <div class="text-slate-500 mt-0.5">
+              ${new Date(session.date).toLocaleString("pt-BR")} • ${doneCount} exercício(s)${session.cardioDone ? " • Cardio concluído" : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // INTERFACE DO ALUNO (VISUALIZAÇÃO, SÉRIES, CRONÔMETRO, SESSÃO)
+    // =========================================================================
+    function getDraftForLetter(letter) {
+      const student = getActiveStudentData();
+      const raw = student.drafts?.[letter];
+      if (!raw) return { items: [], cardioDone: false };
+      if (Array.isArray(raw)) return { items: raw, cardioDone: false };
+      return {
+        items: Array.isArray(raw.items) ? raw.items : [],
+        cardioDone: Boolean(raw.cardioDone)
+      };
+    }
+
+    function readStudentWorkoutUI() {
+      const rows = [...document.querySelectorAll("#exercises .exercise")];
+      return rows.map(el => ({
+        done: el.querySelector(".check")?.checked || false,
+        weight: el.querySelector(".weight")?.value || "",
+        reps: el.querySelector(".reps")?.value || "",
+        notes: el.querySelector(".notes")?.value || "",
+        sets: [...el.querySelectorAll(".setbtn")].map(btn => btn.classList.contains("on"))
+      }));
+    }
+
+    function saveDraft(showFeedback = false) {
+      const targetEmail = getActiveStudentEmail();
+      if (!targetEmail) return;
+
+      const registry = getStudentsRegistry();
+      const student = registry[targetEmail];
+      if (!student) return;
+
+      if (!student.drafts) student.drafts = {};
+      student.drafts[currentLetter] = {
+        items: readStudentWorkoutUI(),
+        cardioDone: document.getElementById("cardioDone")?.checked || false
+      };
+
+      saveStudentsRegistry(registry);
+      updateWorkoutProgress();
+
+      if (showFeedback) {
+        showToast("Progresso do treino salvo!");
+      }
+    }
+
+    function selectStudentWorkout(letter) {
+      currentLetter = letter;
+      renderStudentWorkout();
+    }
+
+    function renderStudentWorkout() {
+      const allPlans = getPlans();
+      const letters = Object.keys(allPlans);
+
+      if (!letters.includes(currentLetter)) {
+        currentLetter = letters[0] || "A";
+      }
+
+      // Renderiza abas de letras definidas pelo treinador
+      const tabsEl = document.getElementById("workoutTabs");
+      tabsEl.innerHTML = letters.map(w => `
+        <button type="button" class="nav-btn ${w === currentLetter ? "active" : ""}" onclick="selectStudentWorkout('${w}')">
+          Treino ${escapeHtml(w)}
+        </button>
+      `).join("");
+
+      const activePlan = allPlans[currentLetter] || {
+        name: "Treino",
+        cardioMinutes: 30,
+        cardioNote: "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:",
+        items: []
+      };
+
+      const draft = getDraftForLetter(currentLetter);
+      const savedItems = draft.items || [];
+
+      document.getElementById("wname").textContent = `Treino ${currentLetter} — ${activePlan.name}`;
+      document.getElementById("cardioDone").checked = Boolean(draft.cardioDone);
+      document.getElementById("cardioDone").onchange = () => saveDraft(false);
+
+      const cardioMins = activePlan.cardioMinutes ?? 30;
+      document.getElementById("cardioTitle").textContent =
+        cardioMins > 0 ? `Cardio — ${cardioMins} minutos (esteira)` : "Cardio (esteira)";
+      document.getElementById("cardioDesc").textContent =
+        activePlan.cardioNote || "Faça ao final do treino, na esteira, progredindo a inclinação e a velocidade conforme a tabela abaixo:";
+
+      const container = document.getElementById("exercises");
+      container.innerHTML = "";
+
+      const items = activePlan.items || [];
+      items.forEach((item, idx) => {
+        const exName = item[0] || `Exercício ${idx + 1}`;
+        const totalSets = Math.max(1, parseInt(item[1], 10) || 3);
+        const repsTarget = item[2] || "8–12";
+        const restSeconds = getExerciseRest(item);
+        const coachNote = item[4] || "";
+
+        const saved = savedItems[idx] || {};
+        const isDone = Boolean(saved.done);
+        const savedSets = Array.isArray(saved.sets) ? saved.sets : [];
+
+        const card = document.createElement("div");
+        card.className = "exercise" + (isDone ? " done" : "");
+
+        const setButtonsHtml = Array.from({ length: totalSets }, (_, sIdx) => {
+          const isOn = Boolean(savedSets[sIdx]);
+          return `<button type="button" class="setbtn ${isOn ? "on" : ""}">${isOn ? "✓ " : ""}Série ${sIdx + 1}</button>`;
+        }).join("");
+
+        const coachNoteHtml = coachNote
+          ? `<div class="coach-tip"><strong>Dica do treinador:</strong> ${escapeHtml(coachNote)}</div>`
+          : "";
+
+        card.innerHTML = `
+          <div class="exercise-title">
+            <input class="check" type="checkbox" ${isDone ? "checked" : ""}>
+            <span>${idx + 1}. ${escapeHtml(exName)}</span>
+          </div>
+          <div class="exercise-meta">
+            ${totalSets} séries • ${escapeHtml(repsTarget)} repetições • descanso ${formatRestDuration(restSeconds)}
+          </div>
+          ${coachNoteHtml}
+          <div class="sets">${setButtonsHtml}</div>
+          <div class="fields">
+            <label class="text-xs font-bold text-brand-900">
+              Carga/peso
+              <input class="weight field-input" placeholder="Ex.: 20 kg" value="${escapeHtml(saved.weight || "")}">
+            </label>
+            <label class="text-xs font-bold text-brand-900">
+              Repetições feitas
+              <input class="reps field-input" placeholder="Ex.: 12, 10, 10" value="${escapeHtml(saved.reps || "")}">
+            </label>
+          </div>
+          <textarea class="notes notes-area" placeholder="Observações pessoais desta sessão">${escapeHtml(saved.notes || "")}</textarea>
+        `;
+
+        card.querySelectorAll("input, textarea").forEach(inputEl => {
+          inputEl.addEventListener("input", () => saveDraft(false));
+        });
+
+        const checkEl = card.querySelector(".check");
+        checkEl.addEventListener("change", () => {
+          card.classList.toggle("done", checkEl.checked);
+          saveDraft(false);
+        });
+
+        const setBtns = [...card.querySelectorAll(".setbtn")];
+        setBtns.forEach((btn, sIdx) => {
+          btn.addEventListener("click", () => {
+            const nextOn = !btn.classList.contains("on");
+            btn.classList.toggle("on", nextOn);
+            btn.textContent = (nextOn ? "✓ " : "") + "Série " + (sIdx + 1);
+
+            const allSetsDone = setBtns.every(b => b.classList.contains("on"));
+            if (allSetsDone) {
+              checkEl.checked = true;
+            } else if (!nextOn) {
+              checkEl.checked = false;
+            }
+            card.classList.toggle("done", checkEl.checked);
+
+            if (nextOn) {
+              if (allSetsDone) {
+                stopRest();
+              } else if (sIdx < totalSets - 1) {
+                startRest(restSeconds, `${exName} • próxima: série ${sIdx + 2} de ${totalSets}`);
+              }
+            }
+            saveDraft(false);
+          });
+        });
+
+        container.appendChild(card);
+      });
+
+      updateWorkoutProgress();
+    }
+
+    function updateWorkoutProgress() {
+      const items = getPlans()[currentLetter]?.items || [];
+      const total = items.length;
+      const done = document.querySelectorAll("#exercises .check:checked").length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      document.getElementById("progressText").textContent = `${done} de ${total} exercícios marcados`;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+    }
+
+    function finishSession() {
+      const items = readStudentWorkoutUI();
+      const cardioDone = document.getElementById("cardioDone")?.checked || false;
+
+      if (!items.some(x => x.done) && !cardioDone) {
+        showToast("Marque pelo menos um exercício ou o cardio como concluído.", "error");
+        return;
+      }
+
+      const targetEmail = getActiveStudentEmail();
+      const registry = getStudentsRegistry();
+      const student = registry[targetEmail];
+      if (!student) return;
+
+      const planObj = student.plans?.[currentLetter] || { name: "Treino", items: [] };
+      if (!Array.isArray(student.history)) student.history = [];
+
+      student.history.unshift({
+        id: Date.now(),
+        date: new Date().toISOString(),
+        workout: currentLetter,
+        name: planObj.name,
+        items,
+        cardioDone,
+        planSnapshot: JSON.parse(JSON.stringify(planObj.items || []))
+      });
+
+      if (student.drafts) {
+        delete student.drafts[currentLetter];
+      }
+
+      saveStudentsRegistry(registry);
+      stopRest();
+      renderStudentWorkout();
+      refreshSecondaryViews();
+      if (currentUser?.role === "coach") {
+        renderTrainerStudentsList();
+      }
+      showToast("Treino finalizado e salvo no histórico!");
+    }
+
+    function clearCurrent() {
+      const targetEmail = getActiveStudentEmail();
+      const registry = getStudentsRegistry();
+      const student = registry[targetEmail];
+      if (student?.drafts) {
+        delete student.drafts[currentLetter];
+        saveStudentsRegistry(registry);
+      }
+      renderStudentWorkout();
+      showToast("Rascunho do treino atual limpo.");
+    }
+
+    // =========================================================================
+    // HISTÓRICO, BACKUP JSON, EVOLUÇÃO DE CARGA E CALENDÁRIO
+    // =========================================================================
+    function renderHistory() {
+      const student = getActiveStudentData();
+      const history = student.history || [];
+      const listEl = document.getElementById("historyList");
+
+      if (!history.length) {
+        listEl.innerHTML = `<p class="text-xs sm:text-sm text-slate-500">Nenhuma sessão registrada ainda.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = history.map(session => {
+        const snapshot = session.planSnapshot || getPlans()[session.workout]?.items || [];
+        const linesHtml = (session.items || []).map((entry, idx) => {
+          if (!entry.done) return "";
+          const exTitle = snapshot[idx]?.[0] || "Exercício";
+          const weightTxt = entry.weight || "sem peso";
+          const repsTxt = entry.reps || "sem reps";
+          const noteTxt = entry.notes ? ` — ${entry.notes}` : "";
+          return `<div class="text-xs text-slate-700 mt-1">
+            <strong class="text-brand-900">${escapeHtml(exTitle)}:</strong> ${escapeHtml(weightTxt)} • ${escapeHtml(repsTxt)}${escapeHtml(noteTxt)}
+          </div>`;
+        }).join("");
+
+        return `
+          <div class="p-3.5 rounded-2xl border border-brand-200 bg-brand-50/30">
+            <div class="font-extrabold text-sm text-brand-900">
+              Treino ${escapeHtml(session.workout)} — ${escapeHtml(session.name)}
+            </div>
+            <div class="text-xs text-slate-500 mb-1.5">
+              ${new Date(session.date).toLocaleString("pt-BR")}
+            </div>
+            ${linesHtml}
+            ${session.cardioDone ? `<div class="text-xs font-semibold text-brand-700 mt-1.5">✓ Cardio concluído</div>` : ""}
+            <button type="button" onclick="deleteHistorySession(${session.id})" class="btn danger !py-1.5 !px-3 !text-xs mt-2.5">
+              Excluir registro
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function deleteHistorySession(sessionId) {
+      const targetEmail = getActiveStudentEmail();
+      const registry = getStudentsRegistry();
+      const student = registry[targetEmail];
+      if (!student) return;
+
+      student.history = (student.history || []).filter(item => item.id !== sessionId);
+      saveStudentsRegistry(registry);
+      refreshSecondaryViews();
+      showToast("Sessão removida do histórico.");
+    }
+
+    function renderStats() {
+      const student = getActiveStudentData();
+      const history = student.history || [];
+      const now = new Date();
+
+      document.getElementById("sessionsStat").textContent = String(history.length);
+      const monthCount = history.filter(item => {
+        const dt = new Date(item.date);
+        return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+      }).length;
+      document.getElementById("monthStat").textContent = String(monthCount);
+
+      const allPlans = getPlans();
+      const exerciseNames = [...new Set(
+        Object.values(allPlans).flatMap(plan => (plan.items || []).map(ex => ex[0]).filter(Boolean))
+      )];
+
+      const selectEl = document.getElementById("exerciseSelect");
+      const previousSelection = selectEl.value;
+      selectEl.innerHTML = exerciseNames.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+      if (exerciseNames.includes(previousSelection)) {
+        selectEl.value = previousSelection;
+      }
+
+      drawChart();
+    }
+
+    function drawChart() {
+      const canvas = document.getElementById("chart");
+      if (!canvas) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(280, rect.width || 600);
+      const height = Math.max(180, rect.height || 220);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+
+      const selectedExercise = document.getElementById("exerciseSelect")?.value || "";
+      const history = getActiveStudentData().history || [];
+      const points = [];
+
+      history.slice().reverse().forEach(session => {
+        const snapshot = session.planSnapshot || getPlans()[session.workout]?.items || [];
+        const exIdx = snapshot.findIndex(item => item[0] === selectedExercise);
+        if (exIdx >= 0 && session.items?.[exIdx]?.weight) {
+          const parsed = parseFloat(String(session.items[exIdx].weight).replace(",", "."));
+          if (!Number.isNaN(parsed)) {
+            points.push(parsed);
+          }
+        }
+      });
+
+      const padLeft = 42;
+      const padRight = 20;
+      const padTop = 20;
+      const padBottom = 34;
+
+      ctx.strokeStyle = "#bbf7d0";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, padTop);
+      ctx.lineTo(padLeft, height - padBottom);
+      ctx.lineTo(width - padRight, height - padBottom);
+      ctx.stroke();
+
+      if (!points.length) {
+        ctx.fillStyle = "#4b6b58";
+        ctx.font = "600 13px Inter, sans-serif";
+        ctx.fillText("Registre cargas numéricas para ver sua evolução.", padLeft + 12, height / 2);
+        return;
+      }
+
+      const maxVal = Math.max(...points);
+      const minVal = Math.min(...points);
+      const span = maxVal - minVal || 1;
+      const plotW = width - padLeft - padRight - 16;
+      const plotH = height - padTop - padBottom - 12;
+
+      ctx.strokeStyle = "#16a34a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      points.forEach((val, idx) => {
+        const x = padLeft + 8 + (points.length === 1 ? plotW / 2 : (idx * plotW) / (points.length - 1));
+        const y = padTop + 6 + plotH - ((val - minVal) / span) * plotH;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      points.forEach((val, idx) => {
+        const x = padLeft + 8 + (points.length === 1 ? plotW / 2 : (idx * plotW) / (points.length - 1));
+        const y = padTop + 6 + plotH - ((val - minVal) / span) * plotH;
+
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#0f291a";
+        ctx.font = "700 11px Inter, sans-serif";
+        ctx.fillText(String(val), x - 8, y - 9);
+      });
+
+      ctx.fillStyle = "#166534";
+      ctx.font = "700 12px Inter, sans-serif";
+      ctx.fillText(`Carga registrada: ${minVal} – ${maxVal}`, padLeft + 6, height - 10);
+    }
+
+    function renderCalendar() {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+      const year = firstDay.getFullYear();
+      const month = firstDay.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const startWeekday = (firstDay.getDay() + 6) % 7;
+
+      document.getElementById("monthLabel").textContent =
+        firstDay.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+      const history = getActiveStudentData().history || [];
+      const trainedDates = new Set(history.map(s => new Date(s.date).toDateString()));
+
+      let html = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+        .map(dayName => `<div class="weekdays">${dayName}</div>`)
+        .join("");
+
+      for (let i = 0; i < startWeekday; i++) {
+        html += `<div></div>`;
+      }
+
+      const todayStr = new Date().toDateString();
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month, day);
+        const dateStr = currentDate.toDateString();
+        let classes = "cal-day";
+        if (trainedDates.has(dateStr)) classes += " trained";
+        if (dateStr === todayStr) classes += " today";
+        html += `<div class="${classes}">${day}</div>`;
+      }
+
+      document.getElementById("cal").innerHTML = html;
+    }
+
+    function changeMonth(delta) {
+      monthOffset += delta;
+      renderCalendar();
+    }
+
+    function exportData() {
+      const student = getActiveStudentData();
+      const payload = {
+        app: "PJ fitnes",
+        exportedAt: new Date().toISOString(),
+        studentEmail: student.email,
+        plans: student.plans,
+        history: student.history,
+        drafts: student.drafts
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "backup-pj-fitnes.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast("Backup JSON exportado!");
+    }
+
+    function importBackup() {
+      document.getElementById("backupFile").click();
+    }
+
+    function readBackup(inputEl) {
+      const file = inputEl.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const targetEmail = getActiveStudentEmail();
+          const registry = getStudentsRegistry();
+          const student = registry[targetEmail];
+          if (!student) return;
+
+          if (parsed.plans && currentUser?.role === "coach") {
+            student.plans = parsed.plans;
+          }
+          if (Array.isArray(parsed.history)) {
+            student.history = parsed.history;
+          }
+          if (parsed.drafts && typeof parsed.drafts === "object") {
+            student.drafts = parsed.drafts;
+          }
+
+          saveStudentsRegistry(registry);
+          renderStudentWorkout();
+          refreshSecondaryViews();
+          if (currentUser?.role === "coach") {
+            renderTrainerStudentsList();
+          }
+          showToast("Backup importado com sucesso!");
+        } catch (err) {
+          showToast("Arquivo de backup inválido.", "error");
+        } finally {
+          inputEl.value = "";
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // =========================================================================
+    // CRONÔMETRO DE DESCANSO ENTRE SÉRIES
+    // =========================================================================
+    function formatRestDuration(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return mins ? `${mins}min${secs ? ` ${secs}s` : ""}` : `${secs}s`;
+    }
+
+    function getExerciseRest(item) {
+      if (typeof item[3] === "number" && item[3] > 0) return item[3];
+      for (const plan of Object.values(DEFAULT_PLANS)) {
+        const found = (plan.items || []).find(ex => ex[0] === item[0]);
+        if (found && typeof found[3] === "number") return found[3];
+      }
+      return 60;
+    }
+
+    function playRestBeep() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.2;
+        osc.start();
+        setTimeout(() => {
+          osc.stop();
+          ctx.close();
+        }, 450);
+      } catch (err) {
+        // Ignora caso o navegador bloqueie áudio automático
+      }
+    }
+
+    function startRest(seconds, label) {
+      clearInterval(restTimerState.intervalId);
+      restTimerState.total = Math.max(5, seconds);
+      restTimerState.end = Date.now() + restTimerState.total * 1000;
+
+      document.getElementById("restBar").classList.remove("hidden");
+      document.getElementById("restLabel").textContent = "Descanso • " + label;
+      restTimerState.intervalId = setInterval(tickRest, 250);
+      tickRest();
+    }
+
+    function tickRest() {
+      const remainingMs = restTimerState.end - Date.now();
+      const leftSec = Math.ceil(remainingMs / 1000);
+
+      if (leftSec <= 0) {
+        clearInterval(restTimerState.intervalId);
+        document.getElementById("restTime").textContent = "Pronto! 💪";
+        document.getElementById("restFill").style.width = "100%";
+        playRestBeep();
+        try {
+          if (navigator.vibrate) navigator.vibrate([250, 120, 250]);
+        } catch (err) {}
+
+        setTimeout(() => {
+          if (Date.now() >= restTimerState.end) {
+            stopRest();
+          }
+        }, 4000);
+        return;
+      }
+
+      const mins = Math.floor(leftSec / 60);
+      const secs = String(leftSec % 60).padStart(2, "0");
+      document.getElementById("restTime").textContent = `${mins}:${secs}`;
+
+      const elapsedRatio = Math.min(
+        100,
+        Math.max(0, ((restTimerState.total * 1000 - remainingMs) / (restTimerState.total * 1000)) * 100)
+      );
+      document.getElementById("restFill").style.width = `${elapsedRatio}%`;
+    }
+
+    function adjustRest(deltaSec) {
+      if (Date.now() >= restTimerState.end) return;
+      restTimerState.end += deltaSec * 1000;
+      restTimerState.total = Math.max(5, restTimerState.total + deltaSec);
+      tickRest();
+    }
+
+    function stopRest() {
+      clearInterval(restTimerState.intervalId);
+      document.getElementById("restBar").classList.add("hidden");
+    }
+
+    // =========================================================================
+    // INICIALIZAÇÃO
+    // =========================================================================
+    window.addEventListener("resize", () => {
+      if (!document.getElementById("stats")?.classList.contains("hidden")) {
+        drawChart();
+      }
+    });
+
+    (function initApp() {
+      getAccounts();
+      getStudentsRegistry();
+      loadFirebaseConfigInputs();
+      syncCoachRegistrationAvailability();
+
+      const savedSession = readJson("pj_fitnes_session_v1", null);
+      if (savedSession && savedSession.email) {
+        enterApp(savedSession);
+      }
+    })();
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function (e) { console.error("SW:", e); });
+      });
+    }
+  </script>
+</body>
+</html>

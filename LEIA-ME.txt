@@ -1,0 +1,12 @@
+PJ fitnes — app para celular (PWA)
+
+1) Coloque TODOS os arquivos desta pasta em uma hospedagem HTTPS gratuita
+   (Netlify Drop, GitHub Pages, Cloudflare Pages ou Vercel).
+2) Abra o link no celular:
+   - Android (Chrome): menu ⋮ > "Instalar app" / "Adicionar à tela inicial"
+   - iPhone (Safari): botão Compartilhar > "Adicionar à Tela de Início"
+3) O app abre em tela cheia, com ícone próprio, e funciona offline
+   depois do primeiro acesso com internet.
+
+Para gerar um APK (Play Store), use o link hospedado em pwabuilder.com.
+Os dados (contas e treinos) ficam salvos no próprio aparelho.
